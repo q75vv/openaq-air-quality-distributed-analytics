@@ -2,6 +2,7 @@ from pyspark.sql import SparkSession
 from dotenv import load_dotenv
 import os
 
+load_dotenv()
 
 #Connection details for MongoDB
 MONGO_URI = os.getenv("MONGO_URI") #mongodb://localhost:27017"
