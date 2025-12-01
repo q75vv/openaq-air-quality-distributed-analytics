@@ -5,20 +5,22 @@ import os
 import json
 import visualizations
 
+#Directory where computed analytics will be stored as JSON files
 RESULTS_DIR = "results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
-#Config
+#MongoDB config
 MONGO_URI = os.getenv("MONGO_URI")
 DB_NAME = os.getenv("MONGO_DB")
-
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
 
 print("\nConnected to MongoDB:", MONGO_URI)
 
-#Save aggregate results to JSON file in results dir
 def save_results(name, data):
+    """
+    Save a list of analytics results to the results/ directory
+    """
     path = os.path.join(RESULTS_DIR, f"{name}.json")
 
     with open(path, "w", encoding="utf-8") as f:
@@ -29,6 +31,11 @@ def save_results(name, data):
 
 #Daily Average Pollutant for a specified location id
 def avg_pollutant_daily(parameter="pm25", location_id=749):
+    """
+    Computes the daily average/min/max/count of a pollutant for a specific location
+
+    Grouping key -> substring of data.utc(YYYY-MM-DD)
+    """
     print(f"\n=== Daily Average for {parameter} at location {location_id} ===")
 
     pipeline = [
@@ -47,12 +54,19 @@ def avg_pollutant_daily(parameter="pm25", location_id=749):
     ]
 
     results = list(db.measurements.aggregate(pipeline))
+
+    #Display sample output to console
     for doc in results[:20]:    #Show first 20 rows
         pprint(doc)
     return results
 
-#For a given pollutant, computes the average value per location over full dataset. 
 def pollution_hotspots(parameter="pm25", min_readings=24):
+    """
+    Compute average pollutant level per location across the dataset and list
+        locations with the highest average pollution
+
+    Locations with fewer than min_readings are excluded
+    """
     print(f"\n=== Pollution hotspots for {parameter} (min_readings={min_readings}) ===")
 
     pipeline = [
@@ -69,12 +83,17 @@ def pollution_hotspots(parameter="pm25", min_readings=24):
     ]
 
     results = list(db.measurements.aggregate(pipeline))
+
     for doc in results[:20]:
         pprint(doc)
     return results
 
-#Counts how many days at a given location have a daily average above a "safe" limit
+
 def days_exceeding_threshold(location_id=749, parameter="pm25", safe_limit=25):
+    """
+    Count the days at a location where the daily average pollutant level exceeds
+        a safety threshold
+    """
     print(f"\n=== Days exceeding {safe_limit} for {parameter} at location {location_id} ===")
 
     pipeline = [
@@ -95,14 +114,18 @@ def days_exceeding_threshold(location_id=749, parameter="pm25", safe_limit=25):
     ]
 
     results = list(db.measurements.aggregate(pipeline))
+
     for doc in results:
         pprint(doc)
 
     print(f"Total days exceeding threshold: {len(results)}")
     return results
 
-#Shows number of readings per sensor at a given location, and the time range they cover
+
 def sensor_uptime_for_location(location_id=749):
+    """
+    Show a total readings and the time range they cover
+    """
     print(f"\n=== Sensor uptime for location {location_id} ===")
 
     pipeline = [
@@ -117,11 +140,12 @@ def sensor_uptime_for_location(location_id=749):
     ]
 
     results = list(db.measurements.aggregate(pipeline))
+
     for doc in results:
         pprint(doc)
     return results
 
-#Compares daily avereage values of a pollutant between two locations
+
 def compare_locations_daily(loc1, loc2, parameter="pm25"):
     print(f"\n=== Daily {parameter} comparison: {loc1} vs {loc2} ===")
 
@@ -151,8 +175,13 @@ def compare_locations_daily(loc1, loc2, parameter="pm25"):
         pprint(doc)
     return results
 
-#Global daily avg accross all locations
+
 def avg_pollutant_daily_global(parameter="pm25"):
+    """
+    Compare daily pollutant averages between two locations
+
+    Groups by locationId, date pairs
+    """
     print(f"\n=== Global daily average for {parameter} across all locations ===")
 
     pipeline = [
@@ -168,11 +197,16 @@ def avg_pollutant_daily_global(parameter="pm25"):
     ]
 
     results = list(db.measurements.aggregate(pipeline))
+
     for doc in results[:20]:
         pprint(doc)
     return results
 
 def main():
+    """
+    Execute all MongoDB analytics pipelines and generate JSON results in /results and
+        visualizations via visualizations.py
+    """
 
     daily_749_pm25 = avg_pollutant_daily("pm25", 749)
     save_results("daily_avg_749_pm25", daily_749_pm25)
