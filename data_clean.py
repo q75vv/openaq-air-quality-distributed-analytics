@@ -210,7 +210,7 @@ def main():
         for doc in measurements:
             f.write(json.dumps(doc) + "\n")
 
-    print(f"✔ Wrote {len(locations_list)} locations, {len(sensors_list)} sensors, {len(measurements)} measurements.")
+    print(f"Wrote {len(locations_list)} locations, {len(sensors_list)} sensors, {len(measurements)} measurements.")
     
 if __name__ == "__main__":
     main()

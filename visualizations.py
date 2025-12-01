@@ -73,16 +73,16 @@ def plot_avg_pollutant_daily2(docs, parameter, location_id, year=None, start_yea
     ax.set_xlabel("Date")
     ax.set_ylabel(f"{parameter} value")
     subtitle = ""
-    if year: subtitle = f" ({year})"
-    if start_year and end_year: subtitle = f"({start_year}-{end_year})"
+    if year is not None: subtitle = f" ({year})"
+    if start_year is not None and end_year is not None: subtitle = f"({start_year}-{end_year})"
     ax.set_title(f"Daily {parameter} averages at location {location_id}")
     ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()
 
     fname_extra = (
-        f"_y{year}" if year
-        else f"_{start_year}-{end_year}" if start_year and end_year
+        f"_y{year}" if year is not None
+        else f"_{start_year}-{end_year}" if start_year is not None and end_year is not None
         else ""
     )
     fname = f"avg_daily_{parameter}_loc{location_id or 'unknown'}{fname_extra}.png"
@@ -200,8 +200,8 @@ def plot_days_exceeding_threshold2(docs, parameter, location_id, safe_limit, yea
     fig.tight_layout()
 
     fname_extra = (
-        f"_y{year}" if year
-        else f"_{start_year}-{end_year}" if start_year and end_year
+        f"_y{year}" if year is not None
+        else f"_{start_year}-{end_year}" if start_year is not None and end_year is not None
         else ""
     )
 
@@ -388,7 +388,7 @@ def plot_avg_pollutant_daily_global2(docs, parameter, year=None, start_year=None
     
     filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
 
-    if not filter:
+    if not filtered:
         print("No data found after applying year filter in avg_pollutant_daily_global")
         return None
     
