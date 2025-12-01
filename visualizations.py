@@ -370,3 +370,60 @@ def plot_avg_pollutant_daily_global(docs, parameter, show=False):
         plt.close(fig)
     print(f"Saved plot: {path}")
     return path
+
+def plot_avg_pollutant_daily_global2(docs, parameter, year=None, start_year=None, end_year=None, show=False):
+    if not docs:
+        print("No data to plot for avg_pollutant_daily_global")
+        return None
+    
+    parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
+
+    def _in_range(dt):
+        y = dt.year
+        if year is not None:
+            return y == year
+        if start_year is not None and end_year is not None:
+            return start_year <= y <= end_year
+        return True
+    
+    filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
+
+    if not filter:
+        print("No data found after applying year filter in avg_pollutant_daily_global")
+        return None
+    
+    dates = [dt for dt, d in filtered]
+    avg_values = [d["avgValue"] for dt, d in filtered]
+
+    fig, ax = plt.subplots()
+    ax.plot(dates, avg_values, marker="o", linewidth=1)
+
+    ax.set_xlabel("Date")
+    ax.set_ylabel(f"Global avg {parameter}")
+
+    subtitle = ""
+    if year is not None:
+        subtitle = f" ({year})"
+    elif start_year is not None and end_year is not None:
+        subtitle = f" ({start_year}-{end_year})"
+
+    ax.set_title(f"Global daily average {parameter} across all locations{subtitle}")
+    fig.autofmt_xdate()
+    fig.tight_layout()
+
+    fname_extra = (
+        f"_y{year}" if year is not None
+        else f"_y{start_year}-{end_year}" if start_year is not None and end_year is not None
+        else ""
+    )
+
+    fname = f"global_avg_daily_{parameter}{fname_extra}.png"
+    path = os.path.join(FIG_DIR, fname)
+    fig.savefig(path, dpi=150)
+
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+    print(f"Saved plot: {path}")
+    return path

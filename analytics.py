@@ -242,7 +242,10 @@ def main():
 
     daily_avg_pm25_global = avg_pollutant_daily_global("pm25")
     save_results("daily_avg_pm25_global", daily_avg_pm25_global)
-    visualizations.plot_avg_pollutant_daily_global(daily_avg_pm25_global, "pm25", False)
+    #visualizations.plot_avg_pollutant_daily_global(daily_avg_pm25_global, "pm25", False)
+    visualizations.plot_avg_pollutant_daily_global2(daily_avg_pm25_global, "pm25", show=False)
+    visualizations.plot_avg_pollutant_daily_global2(daily_avg_pm25_global, "pm25", year=2019, show=False)
+
 
     print("\nAnalytics complete.\n")
 
