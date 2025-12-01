@@ -156,6 +156,66 @@ def plot_days_exceeding_threshold(docs, parameter, location_id, safe_limit, show
     print(f"Saved plot: {path}")
     return path
 
+def plot_days_exceeding_threshold2(docs, parameter, location_id, safe_limit, year=None, start_year=None, end_year=None, show=False):
+    if not docs:
+        print("No days exceeding threshold; nothing to plot. ")
+        return None
+    
+    #Parse dates and apply same year-range logic
+    parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
+
+    def _in_range(dt):
+        y = dt.year
+        if year is not None:
+            return y == year
+        if start_year is not None and end_year is not None:
+            return start_year <= y <= end_year
+        return True
+    
+    filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
+
+    if not filtered:
+        print("No data found after applying year filter in plot_days_exceeding_threshold")
+        return None
+    
+    dates = [dt for dt, d in filtered]
+    daily_avgs = [d["dailyAvg"] for dt, d in filtered]
+
+    fig, ax = plt.subplots()
+    ax.bar(dates, daily_avgs)
+
+    ax.axhline(safe_limit, linestyle="--", linewidth=1, label="Safe limit")
+    ax.set_xlabel("Date")
+    ax.set_ylabel(f"Daily avg {parameter}")
+
+    loc_label = f" at location {location_id}"
+
+    subtitle = ""
+    if year: subtitle = f" ({year})"
+    if start_year and end_year: subtitle = f" ({start_year}-{end_year})"
+
+    ax.set_title(f"Days with daily {parameter} above {safe_limit}{loc_label}{subtitle}")
+    ax.legend()
+    fig.autofmt_xdate()
+    fig.tight_layout()
+
+    fname_extra = (
+        f"_y{year}" if year
+        else f"_{start_year}-{end_year}" if start_year and end_year
+        else ""
+    )
+
+    fname = f"days_exceed_{parameter}_limit{safe_limit}_loc{location_id}{fname_extra}.png"
+    path = os.path.join(FIG_DIR, fname)
+    fig.savefig(path, dpi=150)
+    
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+    print(f"Saved plot: {path}")
+    return path
+
 def plot_sensor_uptime_for_location(docs, location_id, show=False):
     if not docs:
         print("No data to plot for sensor uptime")

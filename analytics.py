@@ -5,6 +5,8 @@ import os
 import json
 import visualizations
 
+load_dotenv()
+
 #Directory where computed analytics will be stored as JSON files
 RESULTS_DIR = "results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -224,7 +226,9 @@ def main():
 
     days_exceed_749_pm25 = days_exceeding_threshold(749, "pm25", 5)
     save_results("days_exceed_749_pm25", days_exceed_749_pm25)
-    visualizations.plot_days_exceeding_threshold(days_exceed_749_pm25, "pm25", 749, 5, False)
+    visualizations.plot_days_exceeding_threshold(days_exceed_749_pm25, "pm25", 749, safe_limit=5, show=False)
+    visualizations.plot_days_exceeding_threshold2(days_exceed_749_pm25, "pm25", 749, safe_limit=5, year=2016, show=False)
+    visualizations.plot_days_exceeding_threshold2(days_exceed_749_pm25, "pm25", 749, safe_limit=5, show=False)
 
     uptime_749 = sensor_uptime_for_location(749)
     save_results("uptime_749", uptime_749)
