@@ -237,6 +237,8 @@ def main():
     compare_749_8132 = compare_locations_daily(749, 8132, "pm25")
     save_results("compare_749_8132", compare_749_8132)
     visualizations.plot_compare_locations_daily(compare_749_8132, 749, 8132, "pm25", False)
+    visualizations.plot_compare_locations_daily2(compare_749_8132, 749, 8132, "pm25", False)
+    visualizations.plot_compare_locations_daily2(compare_749_8132, 749, 8132, "pm25", year=2020, show=False)
 
     daily_avg_pm25_global = avg_pollutant_daily_global("pm25")
     save_results("daily_avg_pm25_global", daily_avg_pm25_global)

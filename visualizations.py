@@ -279,6 +279,71 @@ def plot_compare_locations_daily(docs, loc1, loc2, parameter, show=False):
     print(f"Saved plot: {path}")
     return path
 
+def plot_compare_locations_daily2(docs, loc1, loc2, parameter, year=None, start_year=None, end_year=None, show=False):
+    if not docs:
+        print("No data to plot for compare_locations_daily")
+        return None
+    
+    #Parse dates and apply the same-year range filter
+    parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
+
+    def _in_range(dt):
+        y = dt.year
+        if year is not None:
+            return y == year
+        if start_year is not None and end_year is not None:
+            return start_year <= y <= end_year
+        return True
+    
+    filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
+
+    if not filtered:
+        print("No data found after applying year filter in compare_locations_daily")
+        return None
+    
+    #Build series for each location using filtered docs
+    series = {}
+    for dt, d in filtered:
+        loc = d["_id"]["locationId"]
+        series.setdefault(loc, {"dates": [], "avg": []})
+        series[loc]["dates"].append(dt)
+        series[loc]["avg"].append(d["avgValue"])
+
+    fig, ax = plt.subplots()
+    for loc, data in series.items():
+        label = f"Location {loc}"
+        ax.plot(data["dates"], data["avg"], marker="o", linewidth=1, label=label)
+        
+    ax.set_xlabel("Date")
+    ax.set_ylabel(f"Daily avg {parameter}")
+
+    subtitle = ""
+    if year is not None: subtitle = f" ({year})"
+    elif start_year is not None and end_year is not None: subtitle = f" ({start_year}-{end_year})"
+
+    ax.set_title(f"Daily {parameter}: location {loc1} vs {loc2}{subtitle}")
+    ax.legend()
+    fig.autofmt_xdate()
+    fig.tight_layout()
+
+    fname_extra = (
+        f"_{year}" if year is not None
+        else f"_{start_year}-{end_year}" if start_year is not None and end_year is not None
+        else ""
+    )
+
+    fname = f"compare_{parameter}_{loc1}_vs_{loc2}{fname_extra}.png"
+    path = os.path.join(FIG_DIR, fname)
+    fig.savefig(path, dpi=150)
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
+    print(f"Saved plot: {path}")
+    return path
+            
+
+
 def plot_avg_pollutant_daily_global(docs, parameter, show=False):
     if not docs:
         print("No data to plot for avg_pollutant_daily_global")
