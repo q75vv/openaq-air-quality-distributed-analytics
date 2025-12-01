@@ -30,7 +30,7 @@ def make_measurement_id(location_id, sensor_id, parameter, utc_str, value):
     #Use SHA-1 and take first 12 hex chars to keep ID short but unique
     return "m_" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:12]
 
-def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+def clean_dataframe(df):
     """
     Clean and normalize a raw CSV dataframe into consistent and safe format
 

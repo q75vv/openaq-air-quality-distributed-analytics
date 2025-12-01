@@ -5,13 +5,13 @@ import os
 load_dotenv()
 
 #Connection details for MongoDB
-MONGO_URI = os.getenv("MONGO_URI") #mongodb://localhost:27017"
-MONGO_DB = os.getenv("MONGO_DB") #"air_quality"
+MONGO_URI = os.getenv("MONGO_URI")
+MONGO_DB = os.getenv("MONGO_DB")
 
 #HDFS paths for JSON files 
-HDFS_LOCATIONS = os.getenv("HDFS_LOCATIONS") #"hdfs:///air_quality/locations/locations.json"
-HDFS_SENSORS = os.getenv("HDFS_SENSORS") #"hdfs:///air_quality/sensors/sensors.json"
-HDFS_MEASUREMENTS = os.getenv("HDFS_MEASUREMENTS") #"hdfs:///air_quality/measurements/measurements.json"
+HDFS_LOCATIONS = os.getenv("HDFS_LOCATIONS")
+HDFS_SENSORS = os.getenv("HDFS_SENSORS")
+HDFS_MEASUREMENTS = os.getenv("HDFS_MEASUREMENTS")
 
 def create_spark_session():
     """
