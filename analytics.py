@@ -1,11 +1,21 @@
 from pymongo import MongoClient
 from pprint import pprint
+from dotenv import load_dotenv
 import os
 import json
 import visualizations
 
 RESULTS_DIR = "results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
+
+#Config
+MONGO_URI = os.getenv("MONGO_URI")
+DB_NAME = os.getenv("MONGO_DB")
+
+client = MongoClient(MONGO_URI)
+db = client[DB_NAME]
+
+print("\nConnected to MongoDB:", MONGO_URI)
 
 #Save aggregate results to JSON file in results dir
 def save_results(name, data):
@@ -15,15 +25,6 @@ def save_results(name, data):
         json.dump(data, f, indent=2)
 
     print(f"Saved {len(data)} records to {path}")
-
-#Config
-MONGO_URI = "mongodb://localhost:27017"
-DB_NAME = "air_quality"
-
-client = MongoClient(MONGO_URI)
-db = client[DB_NAME]
-
-print("\nConnected to MongoDB:", MONGO_URI)
 
 
 #Daily Average Pollutant for a specified location id
