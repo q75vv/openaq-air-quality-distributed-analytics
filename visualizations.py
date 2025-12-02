@@ -8,50 +8,20 @@ os.makedirs(FIG_DIR, exist_ok=True)
 def _parse_date(date_str):
     return datetime.strptime(date_str, "%Y-%m-%d").date()
 
+def _in_range(dt, year=None, start_year=None, end_year=None):
+    """Check if a date is within a specified year or range of years."""
+    y = dt.year
+    if year is not None:
+        return y == year
+    if start_year is not None and end_year is not None:
+        return start_year <= y <= end_year
+    return True
+
 #Plot daily average pollutant for a single location
-def plot_avg_pollutant_daily(docs, parameter, location_id, show=False):
+def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year=None, end_year=None, show=False):
     if not docs:
         print("No data to plot for plot_avg_pollutant_daily")
         return None
-
-    dates = [_parse_date(d["_id"]["date"]) for d in docs]
-    avg_values = [d["avgValue"] for d in docs]
-    min_values = [d["minValue"] for d in docs]
-    max_values = [d["maxValue"] for d in docs]
-
-    fig, ax = plt.subplots()
-    ax.plot(dates, avg_values, marker="o", linewidth=1, label="Daily avg")
-    ax.fill_between(dates, min_values, max_values, alpha=0.2, label="Min-Max")
-
-    ax.set_xlabel("Date")
-    ax.set_ylabel(f"{parameter} value")
-    ax.set_title(f"Daily {parameter} averages at location {location_id}")
-    ax.legend()
-    fig.autofmt_xdate()
-    fig.tight_layout()
-
-    fname = f"avg_daily_{parameter}_loc{location_id}.png"
-    path = os.path.join(FIG_DIR, fname)
-    fig.savefig(path, dpi=150)
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
-    print(f"Saved plot: {path}")
-    return path
-
-def plot_avg_pollutant_daily2(docs, parameter, location_id, year=None, start_year=None, end_year=None, show=False):
-    if not docs:
-        print("No data to plot for plot_avg_pollutant_daily")
-        return None
-    
-    def _in_range(dt):
-        y = dt.year
-        if year is not None:
-            return y == year
-        if start_year is not None and end_year is not None:
-            return start_year <= y <= end_year
-        return True
     
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
     filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
@@ -67,7 +37,7 @@ def plot_avg_pollutant_daily2(docs, parameter, location_id, year=None, start_yea
     max_values = [d["maxValue"] for dt, d in filtered]
 
     fig, ax = plt.subplots()
-    ax.plot(dates, avg_values, marker="o", linewidth=1, label="Daily avg")
+    ax.plot(dates, avg_values, marker=".", linewidth=1, label="Daily avg")
     ax.fill_between(dates, min_values, max_values, alpha=0.2, label="Min-Max")
 
     ax.set_xlabel("Date")
@@ -126,51 +96,13 @@ def plot_pollution_hotspots(docs, parameter, top_n=3, show=False):
     return path
 
 #Days exceeding theshold
-def plot_days_exceeding_threshold(docs, parameter, location_id, safe_limit, show=False):
-    
-    if not docs:
-        print("No days exceeding threshold; nothingt to plot.")
-        return None
-    
-    dates = [_parse_date(d["_id"]["date"]) for d in docs]
-    daily_avgs = [d["dailyAvg"] for d in docs]
-
-    fig, ax = plt.subplots()
-    ax.bar(dates, daily_avgs)
-
-    ax.axhline(safe_limit, linestyle="--", linewidth=1)
-    ax.set_xlabel("Date")
-    ax.set_ylabel(f"Daily avg {parameter}")
-    loc_label = f" at location {location_id}" if location_id is not None else ""
-    ax.set_title(f"Days with daily {parameter} above {safe_limit}{loc_label}")
-    fig.autofmt_xdate()
-    fig.tight_layout()
-
-    fname = f"days_exceed_{parameter}_limit{safe_limit}_loc{location_id}.png"
-    path = os.path.join(FIG_DIR, fname)
-    fig.savefig(path, dpi=150)
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
-    print(f"Saved plot: {path}")
-    return path
-
-def plot_days_exceeding_threshold2(docs, parameter, location_id, safe_limit, year=None, start_year=None, end_year=None, show=False):
+def plot_days_exceeding_threshold(docs, parameter, location_id, safe_limit, year=None, start_year=None, end_year=None, show=False):
     if not docs:
         print("No days exceeding threshold; nothing to plot. ")
         return None
     
     #Parse dates and apply same year-range logic
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-
-    def _in_range(dt):
-        y = dt.year
-        if year is not None:
-            return y == year
-        if start_year is not None and end_year is not None:
-            return start_year <= y <= end_year
-        return True
     
     filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
 
@@ -244,56 +176,14 @@ def plot_sensor_uptime_for_location(docs, location_id, show=False):
     print(f"Saved plot: {path}")
     return path
 
-def plot_compare_locations_daily(docs, loc1, loc2, parameter, show=False):
-    if not docs:
-        print("No data to plot for compare_locations_daily")
-        return None
-    
-    series = {}
-    for d in docs:
-        loc = d["_id"]["locationId"]
-        date = _parse_date(d["_id"]["date"])
-        series.setdefault(loc, {"dates": [], "avg": []})
-        series[loc]["dates"].append(date)
-        series[loc]["avg"].append(d["avgValue"])
 
-    fig, ax = plt.subplots()
-    for loc, data in series.items():
-        label = f"Location {loc}"
-        ax.plot(data["dates"], data["avg"], marker="o", linewidth=1, label=label)
-
-    ax.set_xlabel("Date")
-    ax.set_ylabel(f"Daily avg {parameter}")
-    ax.set_title(f"Daily {parameter}: location {loc1} vs {loc2}")
-    ax.legend()
-    fig.autofmt_xdate()
-    fig.tight_layout()
-
-    fname = f"compare_{parameter}_{loc1}_vs_{loc2}.png"
-    path = os.path.join(FIG_DIR, fname)
-    fig.savefig(path, dpi=150)
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
-    print(f"Saved plot: {path}")
-    return path
-
-def plot_compare_locations_daily2(docs, loc1, loc2, parameter, year=None, start_year=None, end_year=None, show=False):
+def plot_compare_locations_daily(docs, loc1, loc2, parameter, year=None, start_year=None, end_year=None, show=False):
     if not docs:
         print("No data to plot for compare_locations_daily")
         return None
     
     #Parse dates and apply the same-year range filter
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-
-    def _in_range(dt):
-        y = dt.year
-        if year is not None:
-            return y == year
-        if start_year is not None and end_year is not None:
-            return start_year <= y <= end_year
-        return True
     
     filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
 
@@ -312,7 +202,7 @@ def plot_compare_locations_daily2(docs, loc1, loc2, parameter, year=None, start_
     fig, ax = plt.subplots()
     for loc, data in series.items():
         label = f"Location {loc}"
-        ax.plot(data["dates"], data["avg"], marker="o", linewidth=1, label=label)
+        ax.plot(data["dates"], data["avg"], marker=".", linewidth=1, label=label)
         
     ax.set_xlabel("Date")
     ax.set_ylabel(f"Daily avg {parameter}")
@@ -343,48 +233,12 @@ def plot_compare_locations_daily2(docs, loc1, loc2, parameter, year=None, start_
     return path
             
 
-
-def plot_avg_pollutant_daily_global(docs, parameter, show=False):
-    if not docs:
-        print("No data to plot for avg_pollutant_daily_global")
-        return None
-    
-    dates = [_parse_date(d["_id"]["date"]) for d in docs]
-    avg_values = [d["avgValue"] for d in docs]
-
-    fig, ax = plt.subplots()
-    ax.plot(dates, avg_values, marker="o", linewidth=1)
-
-    ax.set_xlabel("Date")
-    ax.set_ylabel(f"Global avg {parameter}")
-    ax.set_title(f"Global daily average {parameter} across all locations")
-    fig.autofmt_xdate()
-    fig.tight_layout()
-
-    fname = f"global_avg_daily_{parameter}.png"
-    path = os.path.join(FIG_DIR, fname)
-    fig.savefig(path, dpi=150)
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
-    print(f"Saved plot: {path}")
-    return path
-
-def plot_avg_pollutant_daily_global2(docs, parameter, year=None, start_year=None, end_year=None, show=False):
+def plot_avg_pollutant_daily_global(docs, parameter, year=None, start_year=None, end_year=None, show=False):
     if not docs:
         print("No data to plot for avg_pollutant_daily_global")
         return None
     
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-
-    def _in_range(dt):
-        y = dt.year
-        if year is not None:
-            return y == year
-        if start_year is not None and end_year is not None:
-            return start_year <= y <= end_year
-        return True
     
     filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
 
@@ -396,7 +250,7 @@ def plot_avg_pollutant_daily_global2(docs, parameter, year=None, start_year=None
     avg_values = [d["avgValue"] for dt, d in filtered]
 
     fig, ax = plt.subplots()
-    ax.plot(dates, avg_values, marker="o", linewidth=1)
+    ax.plot(dates, avg_values, marker=".", linewidth=1)
 
     ax.set_xlabel("Date")
     ax.set_ylabel(f"Global avg {parameter}")
@@ -425,97 +279,5 @@ def plot_avg_pollutant_daily_global2(docs, parameter, year=None, start_year=None
         plt.show()
     else:
         plt.close(fig)
-    print(f"Saved plot: {path}")
-    return path
-
-def plot_avg_pollutant_daily_global3(docs, parameter, location_ids=None, year=None, start_year=None, end_year=None, show=False):
-    if not docs:
-        print("No data to plot for avg_pollutant_daily_global")
-        return None
-
-    # --- normalize location_ids ---
-    # Accepts: None, int, list[int], tuple[int]
-    if location_ids is None:
-        allowed_locations = None
-    elif isinstance(location_ids, int):
-        allowed_locations = {location_ids}
-    else:
-        allowed_locations = set(location_ids)
-
-    # --- parse dates ---
-    parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-
-    # --- date filter ---
-    def _in_range(dt):
-        y = dt.year
-        if year is not None:
-            return y == year
-        if start_year is not None and end_year is not None:
-            return start_year <= y <= end_year
-        return True
-
-    filtered = []
-    for dt, d in parsed:
-        # apply date filter
-        if not _in_range(dt):
-            continue
-        # apply location filter if provided
-        if allowed_locations is not None:
-            if d["_id"]["locationId"] not in allowed_locations:
-                continue
-        filtered.append((dt, d))
-
-    if not filtered:
-        print("No data found after filters in avg_pollutant_daily_global2")
-        return None
-
-    # --- extract values ---
-    dates = [dt for dt, d in filtered]
-    avg_values = [d["avgValue"] for dt, d in filtered]
-
-    # --- plotting ---
-    fig, ax = plt.subplots()
-    ax.plot(dates, avg_values, marker="o", linewidth=1)
-
-    ax.set_xlabel("Date")
-    ax.set_ylabel(f"Average {parameter}")
-
-    subtitle = ""
-    if allowed_locations is None:
-        loc_label = "all locations"
-    else:
-        loc_label = f"locations {sorted(allowed_locations)}"
-
-    if year is not None:
-        subtitle = f" ({year})"
-    elif start_year is not None and end_year is not None:
-        subtitle = f" ({start_year}-{end_year})"
-
-    ax.set_title(f"Daily {parameter} average for {loc_label}{subtitle}")
-    fig.autofmt_xdate()
-    fig.tight_layout()
-
-    # filename suffix
-    loc_suffix = (
-        "_all"
-        if allowed_locations is None
-        else "_" + "-".join(str(x) for x in sorted(allowed_locations))
-    )
-
-    fname_extra = (
-        f"_y{year}" if year is not None
-        else f"_{start_year}-{end_year}" if start_year is not None and end_year is not None
-        else ""
-    )
-
-    fname = f"global_avg_daily_{parameter}{loc_suffix}{fname_extra}.png"
-    path = os.path.join(FIG_DIR, fname)
-    fig.savefig(path, dpi=150)
-
-    if show:
-        plt.show()
-    else:
-        plt.close(fig)
-
     print(f"Saved plot: {path}")
     return path

@@ -59,8 +59,8 @@ def avg_pollutant_daily(parameter="pm25", location_id=749):
     results = list(db.measurements.aggregate(pipeline))
 
     #Display sample output to console
-    for doc in results[:20]:    #Show first 20 rows
-        pprint(doc)
+    #for doc in results[:20]:    #Show first 20 rows
+        #pprint(doc)
     return results
 
 def pollution_hotspots(parameter="pm25", min_readings=24):
@@ -87,8 +87,8 @@ def pollution_hotspots(parameter="pm25", min_readings=24):
 
     results = list(db.measurements.aggregate(pipeline))
 
-    for doc in results[:20]:
-        pprint(doc)
+    #for doc in results[:20]:
+        #pprint(doc)
     return results
 
 
@@ -118,8 +118,8 @@ def days_exceeding_threshold(location_id=749, parameter="pm25", safe_limit=25):
 
     results = list(db.measurements.aggregate(pipeline))
 
-    for doc in results:
-        pprint(doc)
+    #for doc in results:
+        #pprint(doc)
 
     print(f"Total days exceeding threshold: {len(results)}")
     return results
@@ -144,8 +144,8 @@ def sensor_uptime_for_location(location_id=749):
 
     results = list(db.measurements.aggregate(pipeline))
 
-    for doc in results:
-        pprint(doc)
+    #for doc in results:
+        #pprint(doc)
     return results
 
 
@@ -174,14 +174,14 @@ def compare_locations_daily(loc1, loc2, parameter="pm25"):
     ]
 
     results = list(db.measurements.aggregate(pipeline))
-    for doc in results[:400]:
-        pprint(doc)
+    #for doc in results[:400]:
+        #pprint(doc)
     return results
 
 
 def avg_pollutant_daily_global(parameter="pm25"):
     """
-    Compare daily pollutant averages between two locations
+    Compare daily pollutant averages between all
 
     Groups by locationId, date pairs
     """
@@ -201,8 +201,8 @@ def avg_pollutant_daily_global(parameter="pm25"):
 
     results = list(db.measurements.aggregate(pipeline))
 
-    for doc in results[:20]:
-        pprint(doc)
+    #for doc in results[:20]:
+        #pprint(doc)
     return results
 
 def main():
@@ -213,13 +213,7 @@ def main():
 
     daily_749_pm25 = avg_pollutant_daily("pm25", 749)
     save_results("daily_avg_749_pm25", daily_749_pm25)
-    visualizations.plot_avg_pollutant_daily(daily_749_pm25, "pm25", 749, False)
-    visualizations.plot_avg_pollutant_daily2(daily_749_pm25, "pm25", 749, year=2016, show=False)
-    #visualizations.plot_daily_avg(daily_749_pm25, "Daily Pm25 - Location 749", "PM25", "µg/m³", "Daily Pm25 - Location 749")
-    #daily_746_pm25 = avg_pollutant_daily("pm25", 746)
-    #save_results("daily_746_pm25", daily_746_pm25)
-    #visualizations.plot_daily_avg(daily_746_pm25, "Daily Pm25 - Location 746", "PM25", "µg/m³", "Daily Pm25 - Location 746")
-
+    visualizations.plot_avg_pollutant_daily(daily_749_pm25, "pm25", 749, year=2016, show=False)
 
     hotspots_pm25 = pollution_hotspots("pm25", 24)
     visualizations.plot_pollution_hotspots(hotspots_pm25, "pm25", 3, False)
@@ -227,9 +221,8 @@ def main():
 
     days_exceed_749_pm25 = days_exceeding_threshold(749, "pm25", 5)
     save_results("days_exceed_749_pm25", days_exceed_749_pm25)
+    visualizations.plot_days_exceeding_threshold(days_exceed_749_pm25, "pm25", 749, safe_limit=5, year=2016, show=False)
     visualizations.plot_days_exceeding_threshold(days_exceed_749_pm25, "pm25", 749, safe_limit=5, show=False)
-    visualizations.plot_days_exceeding_threshold2(days_exceed_749_pm25, "pm25", 749, safe_limit=5, year=2016, show=False)
-    visualizations.plot_days_exceeding_threshold2(days_exceed_749_pm25, "pm25", 749, safe_limit=5, show=False)
 
     uptime_749 = sensor_uptime_for_location(749)
     save_results("uptime_749", uptime_749)
@@ -238,14 +231,18 @@ def main():
     compare_749_8132 = compare_locations_daily(749, 8132, "pm25")
     save_results("compare_749_8132", compare_749_8132)
     visualizations.plot_compare_locations_daily(compare_749_8132, 749, 8132, "pm25", False)
-    visualizations.plot_compare_locations_daily2(compare_749_8132, 749, 8132, "pm25", False)
-    visualizations.plot_compare_locations_daily2(compare_749_8132, 749, 8132, "pm25", year=2020, show=False)
+    visualizations.plot_compare_locations_daily(compare_749_8132, 749, 8132, "pm25", year=2020, show=False)
+
+    compare_749_10907 = compare_locations_daily(749, 10907, "pm25")
+    visualizations.plot_compare_locations_daily(compare_749_10907, 749, 10907, "pm25",show=False)
+    visualizations.plot_compare_locations_daily(compare_749_10907, 749, 10907, "pm25", year=2020, show=False)
+
 
     daily_avg_pm25_global = avg_pollutant_daily_global("pm25")
     save_results("daily_avg_pm25_global", daily_avg_pm25_global)
-    #visualizations.plot_avg_pollutant_daily_global(daily_avg_pm25_global, "pm25", False)
-    visualizations.plot_avg_pollutant_daily_global2(daily_avg_pm25_global, "pm25", show=False)
-    visualizations.plot_avg_pollutant_daily_global2(daily_avg_pm25_global, "pm25", year=2019, show=False)
+    visualizations.plot_avg_pollutant_daily_global(daily_avg_pm25_global, "pm25", False)
+    visualizations.plot_avg_pollutant_daily_global(daily_avg_pm25_global, "pm25", show=False)
+    visualizations.plot_avg_pollutant_daily_global(daily_avg_pm25_global, "pm25", year=2019, show=False)
 
 
     print("\nAnalytics complete.\n")

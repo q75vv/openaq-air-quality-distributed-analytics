@@ -4,7 +4,7 @@ import gzip
 import shutil
 
 #Map Location Names to LocationIds
-LOCATIONS = {"Saint John": 749, "Fredericton": 8132, "Moncton": 746}
+LOCATIONS = {"Saint John": 749, "Fredericton": 8132, "Moncton": 746, "India - Gwalior": 10907}
 
 #Extract locationIds
 LOCATION_IDS = list(LOCATIONS.values())
