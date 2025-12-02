@@ -31,6 +31,23 @@ def save_results(name, data):
 
     print(f"Saved {len(data)} records to {path}")
 
+def get_unit_for_parameter(parameter, location_id=None):
+    """
+    Find the unit for a given parameter.
+
+    If location_id is provided, we try to restrict to that location;
+    otherwise we just grab the first matching sensor.
+    """
+    query = {"parameter": parameter}
+    if location_id is not None:
+        query["locationId"] = location_id
+
+    doc = db.sensors.find_one(query, {"unit": 1})
+    if doc and "unit" in doc:
+        return doc["unit"]
+    return None
+
+
 
 #Daily Average Pollutant for a specified location id
 def avg_pollutant_daily(parameter="pm25", location_id=749):
@@ -57,6 +74,12 @@ def avg_pollutant_daily(parameter="pm25", location_id=749):
     ]
 
     results = list(db.measurements.aggregate(pipeline))
+
+    unit = get_unit_for_parameter(parameter, location_id=location_id)
+
+    for doc in results:
+        doc["parameter"] = parameter
+        doc["unit"] = unit
 
     #Display sample output to console
     #for doc in results[:20]:    #Show first 20 rows
@@ -86,6 +109,12 @@ def pollution_hotspots(parameter="pm25", min_readings=24):
     ]
 
     results = list(db.measurements.aggregate(pipeline))
+
+    unit = get_unit_for_parameter(parameter)
+
+    for doc in results:
+        doc["parameter"] = parameter
+        doc["unit"] = unit
 
     #for doc in results[:20]:
         #pprint(doc)
@@ -117,6 +146,12 @@ def days_exceeding_threshold(location_id=749, parameter="pm25", safe_limit=25):
     ]
 
     results = list(db.measurements.aggregate(pipeline))
+
+    unit = get_unit_for_parameter(parameter, location_id=location_id)
+
+    for doc in results:
+        doc["parameter"] = parameter
+        doc["unit"] = unit
 
     #for doc in results:
         #pprint(doc)
@@ -174,6 +209,13 @@ def compare_locations_daily(loc1, loc2, parameter="pm25"):
     ]
 
     results = list(db.measurements.aggregate(pipeline))
+
+    unit = get_unit_for_parameter(parameter)
+
+    for doc in results:
+        doc["parameter"] = parameter
+        doc["unit"] = unit
+
     #for doc in results[:400]:
         #pprint(doc)
     return results
@@ -200,6 +242,12 @@ def avg_pollutant_daily_global(parameter="pm25"):
     ]
 
     results = list(db.measurements.aggregate(pipeline))
+
+    unit = get_unit_for_parameter(parameter)
+
+    for doc in results:
+        doc["parameter"] = parameter
+        doc["unit"] = unit
 
     #for doc in results[:20]:
         #pprint(doc)
