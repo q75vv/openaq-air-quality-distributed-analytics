@@ -15,7 +15,7 @@ def run_step(desc, cmd):
         print(f"ERROR: Step failed — {desc}")
         print(e)
         sys.exit(1)
-    print(f"✔ Completed: {desc}\n")
+    print(f"Completed: {desc}\n")
     time.sleep(1)  # small pause between steps
 
 def main():
