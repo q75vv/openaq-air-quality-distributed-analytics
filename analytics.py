@@ -48,8 +48,6 @@ def get_unit_for_parameter(parameter, location_id=None):
     return None
 
 
-
-#Daily Average Pollutant for a specified location id
 def avg_pollutant_daily(parameter="pm25", location_id=749):
     """
     Computes the daily average/min/max/count of a pollutant for a specific location
@@ -160,7 +158,7 @@ def days_exceeding_threshold(location_id=749, parameter="pm25", safe_limit=25):
     return results
 
 
-def sensor_uptime_for_location(location_id=749):
+def sensor_uptime_for_location(location_id):
     """
     Show a total readings and the time range they cover
     """

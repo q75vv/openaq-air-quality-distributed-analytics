@@ -3,10 +3,14 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 from data_download import LOCATIONS
 
+#Directory where all generated plot images will be stored
 FIG_DIR = "figures"
 os.makedirs(FIG_DIR, exist_ok=True)
 
 def _parse_date(date_str):
+    """
+    Parse a YYYY-MM-DD date string into a datetime.date object
+    """
     return datetime.strptime(date_str, "%Y-%m-%d").date()
 
 def _in_range(dt, year=None, start_year=None, end_year=None):
@@ -20,9 +24,10 @@ def _in_range(dt, year=None, start_year=None, end_year=None):
 
 def _location_label(location_id):
     """
-    Return a human-friendly label like '749 (Saint John Uptown)'
-    using the LOCATIONS dict (name -> id). If no name is found,
-    just return the ID as a string.
+    Build a human-friendly label like "749 (Saint John)" from a location ID
+
+    Uses the LOCATIONS dict imported from data_download, which maps
+    city names → location IDs. If no name is found, returns just the ID.
     """
     for name, lid in LOCATIONS.items():
         if str(lid) == str(location_id):
@@ -31,8 +36,7 @@ def _location_label(location_id):
 
 def _extract_param_unit(doc, parameter_fallback):
     """
-    Try to pull parameter and unit from the document.
-    Falls back to the parameter passed into the function if needed.
+    Attempt to extract "parameter" and "unit" from a MongoDB aggregation document. 
     """
     # parameter can be at top level or under _id
     param = doc.get("parameter")
@@ -49,17 +53,23 @@ def _extract_param_unit(doc, parameter_fallback):
     return param, unit
 
 def _format_param_unit(parameter, unit):
-    """Return 'parameter (unit)' if unit is present, else just parameter."""
+    """
+    Format parameter and unit into a label for axes/titles
+    """
     return f"{parameter} ({unit})" if unit else str(parameter)
 
-# Plot daily average pollutant for a single location
 def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year=None, end_year=None, show=False):
+    """
+    Plot daily average, min, and max pollutant values for a single location
+    """
     if not docs:
         print("No data to plot for plot_avg_pollutant_daily")
         return None
     
+    #Convert MongoDB "_id.date" string into a datetime.date objs
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-    # NOTE: preserving your existing _in_range usage (no behavior change)
+
+    #Apply year/year-range filter using helper function
     filtered = [(dt, d) for dt, d in parsed if _in_range(dt, year=year, start_year=start_year, end_year=end_year)]
 
     if not filtered:
@@ -83,6 +93,7 @@ def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year
     ax.set_xlabel("Date")
     ax.set_ylabel(f"{param_label} value")
 
+    #Subtitle indicates year or year-range
     subtitle = ""
     if year is not None:
         subtitle = f" ({year})"
@@ -95,12 +106,13 @@ def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year
     fig.autofmt_xdate()
     fig.tight_layout()
 
+    #Build filename suffix based on filters
     fname_extra = (
         f"_y{year}" if year is not None
         else f"_{start_year}-{end_year}" if start_year is not None and end_year is not None
         else ""
     )
-    # keep filenames as-is (no unit)
+
     fname = f"avg_daily_{parameter}_loc{location_id or 'unknown'}{fname_extra}.png"
     path = os.path.join(FIG_DIR, fname)
     fig.savefig(path, dpi=150)
@@ -111,20 +123,24 @@ def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year
     print(f"Saved plot: {path}")
     return path
 
-# Pollutant hotspots (top N locations)
+
 def plot_pollution_hotspots(docs, parameter, top_n=3, show=False):
+    """
+    Plot a horizontal bar chart of top-N highest average pollutant locations.
+    """
     if not docs:
         print("No data to plot for pollution hotspots")
         return None
     
-    # Take top N
+    #Restrict to the first top_n documents (already sorted by avgValue)
     top = docs[:top_n]
-    # Use first doc to get parameter + unit
+
+    #Use first doc to get parameter + unit
     sample_doc = top[0]
     param_from_doc, unit = _extract_param_unit(sample_doc, parameter)
     param_label = _format_param_unit(param_from_doc, unit)
 
-    # Label each bar with "id (Name)" where possible
+    #Label each bar with "id (Name)" where possible
     locations = [_location_label(d["_id"]) for d in top]
     avg_values = [d["avgValue"] for d in top]
 
@@ -149,13 +165,15 @@ def plot_pollution_hotspots(docs, parameter, top_n=3, show=False):
 
 # Days exceeding threshold
 def plot_days_exceeding_threshold(docs, parameter, location_id, safe_limit, year=None, start_year=None, end_year=None, show=False):
+    """
+    Plot days where daily average pollutant levels exceed a given threshold
+    """
     if not docs:
         print("No days exceeding threshold; nothing to plot. ")
         return None
     
     # Parse dates and apply same year-range logic
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-    # preserving behavior
     filtered = [(dt, d) for dt, d in parsed if _in_range(dt, year=year, start_year=start_year, end_year=end_year)]
 
     if not filtered:
@@ -173,6 +191,7 @@ def plot_days_exceeding_threshold(docs, parameter, location_id, safe_limit, year
     fig, ax = plt.subplots()
     ax.bar(dates, daily_avgs)
 
+    #Legend label for the safety limit line
     if unit:
         safe_label = f"Safe limit ({safe_limit} {unit})"
     else:
@@ -214,6 +233,10 @@ def plot_days_exceeding_threshold(docs, parameter, location_id, safe_limit, year
     return path
 
 def plot_sensor_uptime_for_location(docs, location_id, show=False):
+    """
+    Plot sensor uptime for a given location as horizontal bars of total readings per sensor
+    """
+
     if not docs:
         print("No data to plot for sensor uptime")
         return None
@@ -243,13 +266,15 @@ def plot_sensor_uptime_for_location(docs, location_id, show=False):
 
 
 def plot_compare_locations_daily(docs, loc1, loc2, parameter, year=None, start_year=None, end_year=None, show=False):
+    """
+    Plot a time-series comparison of daily averages for two locations
+    """
     if not docs:
         print("No data to plot for compare_locations_daily")
         return None
     
     # Parse dates and apply the same-year range filter
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-    # preserving behavior
     filtered = [(dt, d) for dt, d in parsed if _in_range(dt, year=year, start_year=start_year, end_year=end_year)]
 
     if not filtered:
@@ -309,12 +334,15 @@ def plot_compare_locations_daily(docs, loc1, loc2, parameter, year=None, start_y
             
 
 def plot_avg_pollutant_daily_global(docs, parameter, year=None, start_year=None, end_year=None, show=False):
+    """
+    Plot global daily average pollutant values across all locations
+    """
+
     if not docs:
         print("No data to plot for avg_pollutant_daily_global")
         return None
     
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-    # preserving behavior
     filtered = [(dt, d) for dt, d in parsed if _in_range(dt, year=year, start_year=start_year, end_year=end_year)]
 
     if not filtered:
