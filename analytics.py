@@ -267,10 +267,10 @@ def main():
     visualizations.plot_pollution_hotspots(docs=hotspots_pm25, parameter="pm25", top_n=3, show=False)
     save_results(name="hotspots_pm25", data=hotspots_pm25)
 
-    days_exceed_749_pm25 = days_exceeding_threshold(location_id=LOCATIONS["Saint John"], parameter="pm25", safe_limit=5)
+    days_exceed_749_pm25 = days_exceeding_threshold(location_id=LOCATIONS["Saint John"], parameter="pm25", safe_limit=20)
     save_results(name="days_exceed_749_pm25", data=days_exceed_749_pm25)
-    visualizations.plot_days_exceeding_threshold(docs=days_exceed_749_pm25, parameter="pm25", location_id=LOCATIONS["Saint John"], safe_limit=5, year=2016, show=False)
-    visualizations.plot_days_exceeding_threshold(docs=days_exceed_749_pm25, parameter="pm25", location_id=LOCATIONS["Saint John"], safe_limit=5, show=False)
+    visualizations.plot_days_exceeding_threshold(docs=days_exceed_749_pm25, parameter="pm25", location_id=LOCATIONS["Saint John"], safe_limit=20, year=2016, show=False)
+    visualizations.plot_days_exceeding_threshold(docs=days_exceed_749_pm25, parameter="pm25", location_id=LOCATIONS["Saint John"], safe_limit=20, show=False)
 
     uptime_749 = sensor_uptime_for_location(location_id=LOCATIONS["Saint John"])
     save_results(name="uptime_749", data=uptime_749)

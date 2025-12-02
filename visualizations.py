@@ -29,7 +29,30 @@ def _location_label(location_id):
             return f"{location_id} ({name})"
     return str(location_id)
 
-#Plot daily average pollutant for a single location
+def _extract_param_unit(doc, parameter_fallback):
+    """
+    Try to pull parameter and unit from the document.
+    Falls back to the parameter passed into the function if needed.
+    """
+    # parameter can be at top level or under _id
+    param = doc.get("parameter")
+    if param is None and isinstance(doc.get("_id"), dict):
+        param = doc["_id"].get("parameter")
+    if param is None:
+        param = parameter_fallback
+
+    # unit can be at top level or under _id
+    unit = doc.get("unit")
+    if unit is None and isinstance(doc.get("_id"), dict):
+        unit = doc["_id"].get("unit")
+
+    return param, unit
+
+def _format_param_unit(parameter, unit):
+    """Return 'parameter (unit)' if unit is present, else just parameter."""
+    return f"{parameter} ({unit})" if unit else str(parameter)
+
+# Plot daily average pollutant for a single location
 def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year=None, end_year=None, show=False):
     if not docs:
         print("No data to plot for plot_avg_pollutant_daily")
@@ -42,7 +65,11 @@ def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year
     if not filtered:
         print("No data found after applying year filter")
         return None
-        
+
+    # Use first filtered doc to get parameter + unit
+    sample_doc = filtered[0][1]
+    param_from_doc, unit = _extract_param_unit(sample_doc, parameter)
+    param_label = _format_param_unit(param_from_doc, unit)
 
     dates = [dt for dt, d in filtered]
     avg_values = [d["avgValue"] for dt, d in filtered]
@@ -54,13 +81,16 @@ def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year
     ax.fill_between(dates, min_values, max_values, alpha=0.2, label="Min-Max")
 
     ax.set_xlabel("Date")
-    ax.set_ylabel(f"{parameter} value")
+    ax.set_ylabel(f"{param_label} value")
+
     subtitle = ""
-    if year is not None: subtitle = f" ({year})"
-    if start_year is not None and end_year is not None: subtitle = f"({start_year}-{end_year})"
+    if year is not None:
+        subtitle = f" ({year})"
+    if start_year is not None and end_year is not None:
+        subtitle = f"({start_year}-{end_year})"
 
     loc_label = _location_label(location_id)
-    ax.set_title(f"Daily {parameter} averages at location {loc_label}{subtitle}")
+    ax.set_title(f"Daily {param_label} averages at location {loc_label}{subtitle}")
     ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()
@@ -70,6 +100,7 @@ def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year
         else f"_{start_year}-{end_year}" if start_year is not None and end_year is not None
         else ""
     )
+    # keep filenames as-is (no unit)
     fname = f"avg_daily_{parameter}_loc{location_id or 'unknown'}{fname_extra}.png"
     path = os.path.join(FIG_DIR, fname)
     fig.savefig(path, dpi=150)
@@ -80,25 +111,30 @@ def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year
     print(f"Saved plot: {path}")
     return path
 
-#Pollutant hotspots (top N locations)
+# Pollutant hotspots (top N locations)
 def plot_pollution_hotspots(docs, parameter, top_n=3, show=False):
     if not docs:
         print("No data to plot for pollution hotspots")
         return None
     
-    #Take top N
+    # Take top N
     top = docs[:top_n]
+    # Use first doc to get parameter + unit
+    sample_doc = top[0]
+    param_from_doc, unit = _extract_param_unit(sample_doc, parameter)
+    param_label = _format_param_unit(param_from_doc, unit)
+
     # Label each bar with "id (Name)" where possible
     locations = [_location_label(d["_id"]) for d in top]
     avg_values = [d["avgValue"] for d in top]
 
     fig, ax = plt.subplots()
     ax.barh(locations, avg_values)
-    ax.invert_yaxis() #Highest at the top
+    ax.invert_yaxis()  # Highest at the top
 
-    ax.set_xlabel(f"Average {parameter}")
+    ax.set_xlabel(f"Average {param_label}")
     ax.set_ylabel("Location")
-    ax.set_title(f"Top {len(top)} {parameter} hotspots (by avg value)")
+    ax.set_title(f"Top {len(top)} {param_label} hotspots (by avg value)")
     fig.tight_layout()
 
     fname = f"hotspots_{parameter}_top{len(top)}.png"
@@ -111,13 +147,13 @@ def plot_pollution_hotspots(docs, parameter, top_n=3, show=False):
     print(f"Saved plot: {path}")
     return path
 
-#Days exceeding theshold
+# Days exceeding threshold
 def plot_days_exceeding_threshold(docs, parameter, location_id, safe_limit, year=None, start_year=None, end_year=None, show=False):
     if not docs:
         print("No days exceeding threshold; nothing to plot. ")
         return None
     
-    #Parse dates and apply same year-range logic
+    # Parse dates and apply same year-range logic
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
     # preserving behavior
     filtered = [(dt, d) for dt, d in parsed if _in_range(dt, year=year, start_year=start_year, end_year=end_year)]
@@ -125,24 +161,37 @@ def plot_days_exceeding_threshold(docs, parameter, location_id, safe_limit, year
     if not filtered:
         print("No data found after applying year filter in plot_days_exceeding_threshold")
         return None
-    
+
+    # Use first filtered doc to get parameter + unit
+    sample_doc = filtered[0][1]
+    param_from_doc, unit = _extract_param_unit(sample_doc, parameter)
+    param_label = _format_param_unit(param_from_doc, unit)
+
     dates = [dt for dt, d in filtered]
     daily_avgs = [d["dailyAvg"] for dt, d in filtered]
 
     fig, ax = plt.subplots()
     ax.bar(dates, daily_avgs)
 
-    ax.axhline(safe_limit, linestyle="--", linewidth=1, label="Safe limit")
+    if unit:
+        safe_label = f"Safe limit ({safe_limit} {unit})"
+    else:
+        safe_label = "Safe limit"
+
+    ax.axhline(safe_limit, linestyle="--", linewidth=1, label=safe_label)
     ax.set_xlabel("Date")
-    ax.set_ylabel(f"Daily avg {parameter}")
+    ax.set_ylabel(f"Daily avg {param_label}")
 
     loc_label = _location_label(location_id)
 
     subtitle = ""
-    if year: subtitle = f" ({year})"
-    if start_year and end_year: subtitle = f" ({start_year}-{end_year})"
+    if year:
+        subtitle = f" ({year})"
+    if start_year and end_year:
+        subtitle = f" ({start_year}-{end_year})"
 
-    ax.set_title(f"Days with daily {parameter} above {safe_limit} at location {loc_label}{subtitle}")
+    limit_text = f"{safe_limit} {unit}" if unit else f"{safe_limit}"
+    ax.set_title(f"Days with daily {param_label} above {limit_text} at location {loc_label}{subtitle}")
     ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()
@@ -198,7 +247,7 @@ def plot_compare_locations_daily(docs, loc1, loc2, parameter, year=None, start_y
         print("No data to plot for compare_locations_daily")
         return None
     
-    #Parse dates and apply the same-year range filter
+    # Parse dates and apply the same-year range filter
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
     # preserving behavior
     filtered = [(dt, d) for dt, d in parsed if _in_range(dt, year=year, start_year=start_year, end_year=end_year)]
@@ -206,8 +255,13 @@ def plot_compare_locations_daily(docs, loc1, loc2, parameter, year=None, start_y
     if not filtered:
         print("No data found after applying year filter in compare_locations_daily")
         return None
+
+    # Use first filtered doc to get parameter + unit
+    sample_doc = filtered[0][1]
+    param_from_doc, unit = _extract_param_unit(sample_doc, parameter)
+    param_label = _format_param_unit(param_from_doc, unit)
     
-    #Build series for each location using filtered docs
+    # Build series for each location using filtered docs
     series = {}
     for dt, d in filtered:
         loc = d["_id"]["locationId"]
@@ -221,16 +275,18 @@ def plot_compare_locations_daily(docs, loc1, loc2, parameter, year=None, start_y
         ax.plot(data["dates"], data["avg"], marker=".", linewidth=1, label=label)
         
     ax.set_xlabel("Date")
-    ax.set_ylabel(f"Daily avg {parameter}")
+    ax.set_ylabel(f"Daily avg {param_label}")
 
     subtitle = ""
-    if year is not None: subtitle = f" ({year})"
-    elif start_year is not None and end_year is not None: subtitle = f" ({start_year}-{end_year})"
+    if year is not None:
+        subtitle = f" ({year})"
+    elif start_year is not None and end_year is not None:
+        subtitle = f" ({start_year}-{end_year})"
 
     loc1_label = _location_label(loc1)
     loc2_label = _location_label(loc2)
 
-    ax.set_title(f"Daily {parameter}: location {loc1_label} vs {loc2_label}{subtitle}")
+    ax.set_title(f"Daily {param_label}: location {loc1_label} vs {loc2_label}{subtitle}")
     ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()
@@ -264,6 +320,11 @@ def plot_avg_pollutant_daily_global(docs, parameter, year=None, start_year=None,
     if not filtered:
         print("No data found after applying year filter in avg_pollutant_daily_global")
         return None
+
+    # Use first filtered doc to get parameter + unit
+    sample_doc = filtered[0][1]
+    param_from_doc, unit = _extract_param_unit(sample_doc, parameter)
+    param_label = _format_param_unit(param_from_doc, unit)
     
     dates = [dt for dt, d in filtered]
     avg_values = [d["avgValue"] for dt, d in filtered]
@@ -272,7 +333,7 @@ def plot_avg_pollutant_daily_global(docs, parameter, year=None, start_year=None,
     ax.plot(dates, avg_values, marker=".", linewidth=1)
 
     ax.set_xlabel("Date")
-    ax.set_ylabel(f"Global avg {parameter}")
+    ax.set_ylabel(f"Global avg {param_label}")
 
     subtitle = ""
     if year is not None:
@@ -280,7 +341,7 @@ def plot_avg_pollutant_daily_global(docs, parameter, year=None, start_year=None,
     elif start_year is not None and end_year is not None:
         subtitle = f" ({start_year}-{end_year})"
 
-    ax.set_title(f"Global daily average {parameter} across all locations{subtitle}")
+    ax.set_title(f"Global daily average {param_label} across all locations{subtitle}")
     fig.autofmt_xdate()
     fig.tight_layout()
 
