@@ -211,39 +211,37 @@ def main():
         visualizations via visualizations.py
     """
 
-    daily_749_pm25 = avg_pollutant_daily("pm25", 749)
-    save_results("daily_avg_749_pm25", daily_749_pm25)
-    visualizations.plot_avg_pollutant_daily(daily_749_pm25, "pm25", 749, year=2016, show=False)
+    daily_749_pm25 = avg_pollutant_daily(parameter="pm25", location_id=LOCATIONS["Saint John"])
+    save_results(name="daily_avg_749_pm25", data=daily_749_pm25)
+    visualizations.plot_avg_pollutant_daily(docs=daily_749_pm25, parameter="pm25", location_id=LOCATIONS["Saint John"], year=2016, show=False)
 
-    hotspots_pm25 = pollution_hotspots("pm25", 24)
-    visualizations.plot_pollution_hotspots(hotspots_pm25, "pm25", 3, False)
-    save_results("hotspots_pm25", hotspots_pm25)
+    hotspots_pm25 = pollution_hotspots(parameter="pm25", min_readings=24)
+    visualizations.plot_pollution_hotspots(docs=hotspots_pm25, parameter="pm25", top_n=3, show=False)
+    save_results(name="hotspots_pm25", data=hotspots_pm25)
 
-    days_exceed_749_pm25 = days_exceeding_threshold(749, "pm25", 5)
-    save_results("days_exceed_749_pm25", days_exceed_749_pm25)
-    visualizations.plot_days_exceeding_threshold(days_exceed_749_pm25, "pm25", 749, safe_limit=5, year=2016, show=False)
-    visualizations.plot_days_exceeding_threshold(days_exceed_749_pm25, "pm25", 749, safe_limit=5, show=False)
+    days_exceed_749_pm25 = days_exceeding_threshold(location_id=LOCATIONS["Saint John"], parameter="pm25", safe_limit=5)
+    save_results(name="days_exceed_749_pm25", data=days_exceed_749_pm25)
+    visualizations.plot_days_exceeding_threshold(docs=days_exceed_749_pm25, parameter="pm25", location_id=LOCATIONS["Saint John"], safe_limit=5, year=2016, show=False)
+    visualizations.plot_days_exceeding_threshold(docs=days_exceed_749_pm25, parameter="pm25", location_id=LOCATIONS["Saint John"], safe_limit=5, show=False)
 
-    uptime_749 = sensor_uptime_for_location(749)
-    save_results("uptime_749", uptime_749)
-    visualizations.plot_sensor_uptime_for_location(uptime_749, 749, False)
+    uptime_749 = sensor_uptime_for_location(location_id=LOCATIONS["Saint John"])
+    save_results(name="uptime_749", data=uptime_749)
+    visualizations.plot_sensor_uptime_for_location(docs=uptime_749, location_id=LOCATIONS["Saint John"], show=False)
 
-    compare_749_8132 = compare_locations_daily(749, 8132, "pm25")
-    save_results("compare_749_8132", compare_749_8132)
-    visualizations.plot_compare_locations_daily(compare_749_8132, 749, 8132, "pm25", False)
-    visualizations.plot_compare_locations_daily(compare_749_8132, 749, 8132, "pm25", year=2020, show=False)
+    compare_749_8132 = compare_locations_daily(loc1=LOCATIONS["Saint John"], loc2=LOCATIONS["Fredericton"], parameter="pm25")
+    save_results(name="compare_749_8132", data=compare_749_8132)
+    visualizations.plot_compare_locations_daily(docs=compare_749_8132, loc1=LOCATIONS["Saint John"], loc2=LOCATIONS["Fredericton"], parameter="pm25", show=False)
+    visualizations.plot_compare_locations_daily(docs=compare_749_8132, loc1=LOCATIONS["Saint John"], loc2=LOCATIONS["Fredericton"], parameter="pm25", year=2020, show=False)
 
-    compare_749_10907 = compare_locations_daily(749, 10907, "pm25")
-    visualizations.plot_compare_locations_daily(compare_749_10907, 749, 10907, "pm25",show=False)
-    visualizations.plot_compare_locations_daily(compare_749_10907, 749, 10907, "pm25", year=2020, show=False)
+    compare_749_10907 = compare_locations_daily(loc1=LOCATIONS["Saint John"], loc2=LOCATIONS["India - Gwalior"], parameter="pm25")
+    save_results(name="compare_749_10907", data=compare_749_10907)
+    visualizations.plot_compare_locations_daily(docs=compare_749_10907, loc1=LOCATIONS["Saint John"], loc2=LOCATIONS["India - Gwalior"], parameter="pm25",show=False)
+    visualizations.plot_compare_locations_daily(docs=compare_749_10907, loc1=LOCATIONS["Saint John"], loc2=LOCATIONS["India - Gwalior"], parameter="pm25", year=2020, show=False)
 
-
-    daily_avg_pm25_global = avg_pollutant_daily_global("pm25")
-    save_results("daily_avg_pm25_global", daily_avg_pm25_global)
-    visualizations.plot_avg_pollutant_daily_global(daily_avg_pm25_global, "pm25", False)
-    visualizations.plot_avg_pollutant_daily_global(daily_avg_pm25_global, "pm25", show=False)
-    visualizations.plot_avg_pollutant_daily_global(daily_avg_pm25_global, "pm25", year=2019, show=False)
-
+    daily_avg_pm25_global = avg_pollutant_daily_global(parameter="pm25")
+    save_results(name="daily_avg_pm25_global", data=daily_avg_pm25_global)
+    visualizations.plot_avg_pollutant_daily_global(docs=daily_avg_pm25_global, parameter="pm25", show=False)
+    visualizations.plot_avg_pollutant_daily_global(docs=daily_avg_pm25_global, parameter="pm25", year=2019, show=False)
 
     print("\nAnalytics complete.\n")
 

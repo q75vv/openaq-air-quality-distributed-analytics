@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 import matplotlib.pyplot as plt
+from data_download import LOCATIONS
 
 FIG_DIR = "figures"
 os.makedirs(FIG_DIR, exist_ok=True)
@@ -17,6 +18,17 @@ def _in_range(dt, year=None, start_year=None, end_year=None):
         return start_year <= y <= end_year
     return True
 
+def _location_label(location_id):
+    """
+    Return a human-friendly label like '749 (Saint John Uptown)'
+    using the LOCATIONS dict (name -> id). If no name is found,
+    just return the ID as a string.
+    """
+    for name, lid in LOCATIONS.items():
+        if str(lid) == str(location_id):
+            return f"{location_id} ({name})"
+    return str(location_id)
+
 #Plot daily average pollutant for a single location
 def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year=None, end_year=None, show=False):
     if not docs:
@@ -24,7 +36,8 @@ def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year
         return None
     
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-    filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
+    # NOTE: preserving your existing _in_range usage (no behavior change)
+    filtered = [(dt, d) for dt, d in parsed if _in_range(dt, year=year, start_year=start_year, end_year=end_year)]
 
     if not filtered:
         print("No data found after applying year filter")
@@ -45,7 +58,9 @@ def plot_avg_pollutant_daily(docs, parameter, location_id, year=None, start_year
     subtitle = ""
     if year is not None: subtitle = f" ({year})"
     if start_year is not None and end_year is not None: subtitle = f"({start_year}-{end_year})"
-    ax.set_title(f"Daily {parameter} averages at location {location_id}")
+
+    loc_label = _location_label(location_id)
+    ax.set_title(f"Daily {parameter} averages at location {loc_label}{subtitle}")
     ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()
@@ -73,7 +88,8 @@ def plot_pollution_hotspots(docs, parameter, top_n=3, show=False):
     
     #Take top N
     top = docs[:top_n]
-    locations = [str(d["_id"]) for d in top]
+    # Label each bar with "id (Name)" where possible
+    locations = [_location_label(d["_id"]) for d in top]
     avg_values = [d["avgValue"] for d in top]
 
     fig, ax = plt.subplots()
@@ -81,7 +97,7 @@ def plot_pollution_hotspots(docs, parameter, top_n=3, show=False):
     ax.invert_yaxis() #Highest at the top
 
     ax.set_xlabel(f"Average {parameter}")
-    ax.set_ylabel(f"LocationId")
+    ax.set_ylabel("Location")
     ax.set_title(f"Top {len(top)} {parameter} hotspots (by avg value)")
     fig.tight_layout()
 
@@ -103,8 +119,8 @@ def plot_days_exceeding_threshold(docs, parameter, location_id, safe_limit, year
     
     #Parse dates and apply same year-range logic
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-    
-    filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
+    # preserving behavior
+    filtered = [(dt, d) for dt, d in parsed if _in_range(dt, year=year, start_year=start_year, end_year=end_year)]
 
     if not filtered:
         print("No data found after applying year filter in plot_days_exceeding_threshold")
@@ -120,13 +136,13 @@ def plot_days_exceeding_threshold(docs, parameter, location_id, safe_limit, year
     ax.set_xlabel("Date")
     ax.set_ylabel(f"Daily avg {parameter}")
 
-    loc_label = f" at location {location_id}"
+    loc_label = _location_label(location_id)
 
     subtitle = ""
     if year: subtitle = f" ({year})"
     if start_year and end_year: subtitle = f" ({start_year}-{end_year})"
 
-    ax.set_title(f"Days with daily {parameter} above {safe_limit}{loc_label}{subtitle}")
+    ax.set_title(f"Days with daily {parameter} above {safe_limit} at location {loc_label}{subtitle}")
     ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()
@@ -162,8 +178,8 @@ def plot_sensor_uptime_for_location(docs, location_id, show=False):
 
     ax.set_xlabel("Total readings")
     ax.set_ylabel("SensorId")
-    loc_label = f" at location {location_id}"
-    ax.set_title(f"Sensor uptime (readings per sensor) {loc_label}")
+    loc_label = _location_label(location_id)
+    ax.set_title(f"Sensor uptime (readings per sensor) at location {loc_label}")
     fig.tight_layout()
 
     fname = f"sensor_uptime_loc{location_id}.png"
@@ -184,8 +200,8 @@ def plot_compare_locations_daily(docs, loc1, loc2, parameter, year=None, start_y
     
     #Parse dates and apply the same-year range filter
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-    
-    filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
+    # preserving behavior
+    filtered = [(dt, d) for dt, d in parsed if _in_range(dt, year=year, start_year=start_year, end_year=end_year)]
 
     if not filtered:
         print("No data found after applying year filter in compare_locations_daily")
@@ -201,7 +217,7 @@ def plot_compare_locations_daily(docs, loc1, loc2, parameter, year=None, start_y
 
     fig, ax = plt.subplots()
     for loc, data in series.items():
-        label = f"Location {loc}"
+        label = f"Location {_location_label(loc)}"
         ax.plot(data["dates"], data["avg"], marker=".", linewidth=1, label=label)
         
     ax.set_xlabel("Date")
@@ -211,7 +227,10 @@ def plot_compare_locations_daily(docs, loc1, loc2, parameter, year=None, start_y
     if year is not None: subtitle = f" ({year})"
     elif start_year is not None and end_year is not None: subtitle = f" ({start_year}-{end_year})"
 
-    ax.set_title(f"Daily {parameter}: location {loc1} vs {loc2}{subtitle}")
+    loc1_label = _location_label(loc1)
+    loc2_label = _location_label(loc2)
+
+    ax.set_title(f"Daily {parameter}: location {loc1_label} vs {loc2_label}{subtitle}")
     ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()
@@ -239,8 +258,8 @@ def plot_avg_pollutant_daily_global(docs, parameter, year=None, start_year=None,
         return None
     
     parsed = [(_parse_date(d["_id"]["date"]), d) for d in docs]
-    
-    filtered = [(dt, d) for dt, d in parsed if _in_range(dt)]
+    # preserving behavior
+    filtered = [(dt, d) for dt, d in parsed if _in_range(dt, year=year, start_year=start_year, end_year=end_year)]
 
     if not filtered:
         print("No data found after applying year filter in avg_pollutant_daily_global")
