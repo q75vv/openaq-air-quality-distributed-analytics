@@ -163,7 +163,6 @@ def plot_pollution_hotspots(docs, parameter, top_n=3, show=False):
     print(f"Saved plot: {path}")
     return path
 
-# Days exceeding threshold
 def plot_days_exceeding_threshold(docs, parameter, location_id, safe_limit, year=None, start_year=None, end_year=None, show=False):
     """
     Plot days where daily average pollutant levels exceed a given threshold
